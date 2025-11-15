@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Efes Admin</string>
+    <string name="title_activity_main">Efes Admin</string>
+    <string name="package_name">com.efeskebap.admin</string>
+    <string name="custom_url_scheme">com.efeskebap.admin</string>
+</resources>
