@@ -65,6 +65,8 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            echo "📱 Installing @capacitor/ios package..."
+            npm install @capacitor/ios@latest
             echo "📱 Adding iOS platform..."
             npx cap add ios || echo "✅ iOS platform already exists"
     - script@1:
