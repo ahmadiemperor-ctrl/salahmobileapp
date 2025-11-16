@@ -60,15 +60,14 @@ workflows:
         - command: run test
     - save-npm-cache@1: {}
     - script@1:
-        title: Add iOS Platform
+        title: Install Capacitor iOS Package
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            echo "📱 Installing @capacitor/ios package..."
+            echo "📦 Installing @capacitor/ios package..."
             npm install @capacitor/ios@latest
-            echo "📱 Adding iOS platform..."
-            npx cap add ios || echo "✅ iOS platform already exists"
+            echo "✅ @capacitor/ios installed"
     - script@1:
         title: Use iOS Configuration
         inputs:
@@ -79,6 +78,7 @@ workflows:
             if [ -f "capacitor.config.ios.ts" ]; then
               cp capacitor.config.ios.ts capacitor.config.ts
               echo "✅ iOS config activated"
+              cat capacitor.config.ts
             fi
     - script@1:
         title: Build Web Assets
@@ -90,14 +90,16 @@ workflows:
             npm run build
             echo "✅ Build complete"
     - script@1:
-        title: Sync Capacitor iOS
+        title: Add iOS Platform & Sync
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            echo "📱 Adding iOS platform..."
+            npx cap add ios || echo "iOS platform exists, syncing..."
             echo "🔄 Syncing Capacitor with iOS..."
             npx cap sync ios
-            echo "✅ Sync complete"
+            echo "✅ iOS platform ready"
     - cocoapods-install@2:
         inputs:
         - source_root_path: ios/App
