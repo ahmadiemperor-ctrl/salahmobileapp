@@ -120,7 +120,7 @@ workflows:
               -scheme App \
               -configuration Debug \
               -sdk iphonesimulator \
-              -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+              -destination 'platform=iOS Simulator,id=dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder' \
               -derivedDataPath build \
               build
             echo "✅ Simulator build complete!"
