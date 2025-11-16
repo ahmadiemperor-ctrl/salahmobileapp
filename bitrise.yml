@@ -1,0 +1,130 @@
+---
+format_version: '13'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: node-js
+
+workflows:
+  # Android/Testing workflow (already working)
+  run_tests:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        title: Install Node.js
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euxo pipefail
+            export ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY=latest_installed
+            envman add --key ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY --value latest_installed
+            pushd "${NODEJS_PROJECT_DIR:-.}" > /dev/null
+            asdf plugin add nodejs || true
+            asdf install nodejs latest
+            asdf global nodejs latest
+            popd > /dev/null
+    - restore-npm-cache@2: {}
+    - npm@1:
+        inputs:
+        - command: install
+    - npm@1:
+        inputs:
+        - command: run lint
+    - npm@1:
+        inputs:
+        - command: run test
+    - save-npm-cache@1: {}
+  
+  # NEW: iOS build workflow (FREE - no Apple Developer account needed!)
+  ios_build:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        title: Install Node.js
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            export ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY=latest_installed
+            envman add --key ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY --value latest_installed
+            asdf plugin add nodejs || true
+            asdf install nodejs latest
+            asdf global nodejs latest
+    - restore-npm-cache@2: {}
+    - npm@1:
+        inputs:
+        - command: install
+    - npm@1:
+        inputs:
+        - command: run lint
+    - npm@1:
+        inputs:
+        - command: run test
+    - save-npm-cache@1: {}
+    - script@1:
+        title: Add iOS Platform
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "📱 Adding iOS platform..."
+            npx cap add ios || echo "✅ iOS platform already exists"
+    - script@1:
+        title: Use iOS Configuration
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "⚙️  Switching to iOS config..."
+            if [ -f "capacitor.config.ios.ts" ]; then
+              cp capacitor.config.ios.ts capacitor.config.ts
+              echo "✅ iOS config activated"
+            fi
+    - script@1:
+        title: Build Web Assets
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "🏗️  Building web assets..."
+            npm run build
+            echo "✅ Build complete"
+    - script@1:
+        title: Sync Capacitor iOS
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "🔄 Syncing Capacitor with iOS..."
+            npx cap sync ios
+            echo "✅ Sync complete"
+    - cocoapods-install@2:
+        inputs:
+        - source_root_path: ios/App
+        - podfile_path: ios/App/Podfile
+    - script@1:
+        title: Build iOS for Simulator (FREE - No Apple Account!)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "🎮 Building for iOS Simulator..."
+            echo "💰 NO $99 Apple Developer account needed!"
+            cd ios/App
+            xcodebuild -workspace App.xcworkspace \
+              -scheme App \
+              -configuration Debug \
+              -sdk iphonesimulator \
+              -destination 'platform=iOS Simulator,name=iPhone 15' \
+              -derivedDataPath build \
+              build
+            echo "✅ Simulator build complete!"
+            find build/Build/Products -name "*.app" -exec cp -r {} "$BITRISE_DEPLOY_DIR/" \;
+            echo "📱 App copied to deploy directory"
+            ls -la "$BITRISE_DEPLOY_DIR"
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - notify_user_groups: none
+
+meta:
+  bitrise.io:
+    stack: osx-xcode-16.1.x
+    machine_type_id: g2-m1.4core
